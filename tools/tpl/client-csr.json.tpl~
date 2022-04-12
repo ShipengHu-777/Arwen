@@ -1,0 +1,21 @@
+{
+    "CN": "${client_cn}",
+    "hosts": [
+        "10.107.117.16",
+        "${client_cn}"
+    ],
+    "key": {
+        "algo": "ecdsa",
+        "size": 256
+    },
+    "names": [
+        {
+          "C": "CN",
+          "L": "GuangDong",
+          "ST": "Shenzhen",
+          "O": "FATE",
+          "OU": "ops"
+        }
+    ]
+}
+

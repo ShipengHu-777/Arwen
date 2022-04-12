@@ -1,0 +1,72 @@
+host:
+  partyid: 10001
+  rollsite:
+    enable: True
+    ips:
+    - 172.23.12.120
+    port: 9370
+    secure_port: 9371
+    pool_size: 600
+    max_memory:
+    server_secure: False
+    client_secure: False
+    polling:
+      enable: False
+    default_rules:
+    - name: default
+      ip: 172.23.12.122
+      port: 9370
+      is_secure: False
+    rules:
+    - name: default
+      ip: 172.23.12.120
+      port: 9370
+    - name: fateflow
+      ip: 172.23.12.120
+      port: 9360
+  clustermanager:
+    enable: True
+    ips:
+    - 172.23.12.120
+    port: 4670
+    cores_per_node: 16
+  nodemanager:
+    enable: True
+    ips:
+    - 172.23.12.120
+    port: 4671
+  eggroll:
+    dbname: "eggroll_meta"
+    egg: 4
+  fate_flow:
+    enable: True
+    ips:
+    - 172.23.12.120
+    grpcPort: 9360
+    httpPort: 9380
+    dbname: "fate_flow"
+    proxy: rollsite
+  fateboard:
+    enable: True
+    ips:
+    - 172.23.12.120
+    port: 8080
+    dbname: "fate_flow"
+  mysql:
+    enable: True
+    ips:
+    - 172.23.12.120
+    port: 3306
+    dbuser: "fate"
+    dbpasswd: "fate_deV2999"
+  zk:
+    enable: False
+    lists:
+    - ip: 172.23.12.120
+      port: 2181
+    use_acl: false
+    user: "fate"
+    passwd: "fate"
+  servings:
+    ip: 172.23.12.120
+    port: 8000

@@ -1,0 +1,53 @@
+
+- hosts: input_check
+  any_errors_fatal: True
+  vars:
+    jbase: "{{pbase}}/{{pname}}/{{java['path']}}/{{java['name']}}-{{java['version']}}"
+    pybase: "{{pbase}}/{{pname}}/{{python['venv']}}"
+    pypath: "{{pbase}}/{{pname}}/python:{{pbase}}/{{pname}}/eggroll/python"
+  vars_files:
+  - var_files/prod/base_init
+  - var_files/prod/fate_init
+  - var_files/prod/fate_host
+  - var_files/prod/fate_guest
+  - var_files/prod/fate_exchange
+  roles:
+  - input_check
+
+- hosts: fate
+  any_errors_fatal: True
+  vars:
+    jbase: "{{pbase}}/{{pname}}/{{java['path']}}/{{java['name']}}-{{java['version']}}"
+    pybase: "{{pbase}}/{{pname}}/{{python['venv']}}"
+    pypath: "{{pbase}}/{{pname}}/python:{{pbase}}/{{pname}}/eggroll/python"
+  vars_files:
+  - var_files/prod/base_init
+  - var_files/prod/fate_init
+  - var_files/prod/fate_host
+  - var_files/prod/fate_guest
+  - var_files/prod/fate_exchange
+  roles:
+  - base
+  - supervisor
+  - { role: "mysql", when: "( ansible_ssh_host in host['mysql']['ips'] and host['mysql']['enable'] == True and deploy_mode  == 'install' ) or ( ansible_ssh_host in guest['mysql']['ips'] and guest['mysql']['enable'] == True and deploy_mode == 'install' )" }
+  - { role: "python", when: "( ansible_ssh_host in host['rollsite']['ips'] and host['rollsite']['enable'] == True ) or ( ansible_ssh_host in guest['rollsite']['ips'] and guest['rollsite']['enable'] == True ) or  ( ansible_ssh_host in guest['nodemanager']['ips'] and guest['nodemanager']['enable'] == True ) or  ( ansible_ssh_host in guest['clustermanager']['ips'] and guest['clustermanager']['enable'] == True ) or ( ansible_ssh_host in host['nodemanager']['ips'] and host['nodemanager']['enable'] == True )  or  ( ansible_ssh_host in host['clustermanager']['ips'] and host['clustermanager']['enable'] == True ) or ( ansible_ssh_host in host['fate_flow']['ips'] and host['fate_flow']['enable'] == True ) or ( ansible_ssh_host in guest['fate_flow']['ips'] and guest['fate_flow']['enable'] == True )" }
+  - { role: "eggroll_check", when: "( ( ansible_ssh_host in exchange['rollsite']['ips'] and exchange['enable'] == True ) or ( ansible_ssh_host in host['rollsite']['ips'] and host['rollsite']['enable'] == True ) or ( ansible_ssh_host in guest['rollsite']['ips'] and guest['rollsite']['enable'] == True ) or  ( ansible_ssh_host in guest['nodemanager']['ips'] and guest['nodemanager']['enable'] == True ) or  ( ansible_ssh_host in guest['clustermanager']['ips'] and guest['clustermanager']['enable'] == True ) or ( ansible_ssh_host in host['nodemanager']['ips'] and host['nodemanager']['enable'] == True )  or  ( ansible_ssh_host in host['clustermanager']['ips'] and host['clustermanager']['enable'] == True ) or ( ansible_ssh_host in host['fate_flow']['ips'] and host['fate_flow']['enable'] == True ) or ( ansible_ssh_host in guest['fate_flow']['ips'] and guest['fate_flow']['enable'] == True ) )" }
+  - { role: "fate_flow_check", when: "( ansible_ssh_host in host['fate_flow']['ips'] and host['fate_flow']['enable'] == True ) or ( ansible_ssh_host in guest['fate_flow']['ips'] and guest['fate_flow']['enable'] == True ) or ( ansible_ssh_host in host['rollsite']['ips'] and host['rollsite']['enable'] == True ) or ( ansible_ssh_host in guest['rollsite']['ips'] and guest['rollsite']['enable'] == True ) or ( ansible_ssh_host in host['nodemanager']['ips'] and host['nodemanager']['enable'] == True ) or ( ansible_ssh_host in guest['nodemanager']['ips'] and guest['nodemanager']['enable'] == True ) or ( ansible_ssh_host in host['clustermanager']['ips'] and host['clustermanager']['enable'] == True )  or ( ansible_ssh_host in guest['clustermanager']['ips'] and guest['clustermanager']['enable'] == True )" }
+  - { role: "fateboard_check", when: "( ansible_ssh_host in host['fateboard']['ips'] and host['fateboard']['enable'] == True ) or ( ansible_ssh_host in guest['fateboard']['ips'] and guest['fateboard']['enable'] == True )" }
+
+
+- hosts: deploy_check
+  any_errors_fatal: True
+  vars:
+    jbase: "{{pbase}}/{{pname}}/{{java['path']}}/{{java['name']}}-{{java['version']}}"
+    pybase: "{{pbase}}/{{pname}}/{{python['venv']}}"
+    pypath: "{{pbase}}/{{pname}}/python:{{pbase}}/{{pname}}/eggroll/python"
+  vars_files:
+  - var_files/prod/base_init
+  - var_files/prod/fate_init
+  - var_files/prod/fate_host
+  - var_files/prod/fate_guest
+  - var_files/prod/fate_exchange
+  roles:
+  - deploy_check
+

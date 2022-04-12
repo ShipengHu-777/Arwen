@@ -1,0 +1,7 @@
+- import_playbook: mysql_uninstall.yml
+
+- import_playbook: eggroll_uninstall.yml
+
+- import_playbook: fate_flow_uninstall.yml
+
+- import_playbook: fateboard_uninstall.yml
