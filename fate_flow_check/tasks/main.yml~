@@ -1,0 +1,253 @@
+- name: "mkdir({{deploy_mode}}): {{lbase}}/{{pname}}/eggroll"
+  file:
+    path: "{{lbase}}/{{pname}}/eggroll"
+    state: directory
+    mode: 0755
+  when: deploy_mode == "install"
+
+- name: "mkdir({{deploy_mode}}): {{dbase}}/{{pname}}/{keys,eggroll}"
+  file:
+    path: "{{dbase}}/{{pname}}/{{item}}"
+    state: directory
+    mode: 0755
+  with_items:
+  - keys
+  - eggroll
+  when: deploy_mode == "install"
+
+- name: "Warning({{deploy_mode}}): client_secure setting check"
+  debug: msg="Do not support host && guest && exchange client key"
+  when: deploy_mode == "install" and host.get('rollsite',{}).get('enable', False) == True and  host.get('rollsite',{}).get('client_secure', False) == True and guest.get('rollsite',{}).get('enable', False) == True and guest.get('rollsite',{}).get('client_secure', False) == True and exchange.get('enable', False) == True and exchange.get('rollsite',{}).get('client_secure', False) == True 
+
+- name: "Warning({{deploy_mode}}): server_secure setting check"
+  debug: msg="Do not support host && guest && exchange client key"
+  when: deploy_mode == "install" and host.get('rollsite',{}).get('enable', False) == True and  host.get('rollsite',{}).get('server_secure', False) == True and guest.get('rollsite',{}).get('enable', False) == True and guest.get('rollsite',{}).get('server_secure', False) == True and exchange.get('enable', False) == True and exchange.get('rollsite',{}).get('server_secure', False) == True 
+
+- name: "Copy: eggroll server keys (host)"
+  copy:
+    src: "keys/host/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - host-ca.pem
+  - host-server.pem
+  - host-server.key
+  when: deploy_mode == "install" and ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and host.get('rollsite',{}).get('enable', False) == True and  host.get('rollsite',{}).get('server_secure', False) == True 
+
+- name: "Copy: eggroll client(guest) keys (host)"
+  copy:
+    src: "keys/host/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - guest-client-ca.pem
+  - guest-client.pem
+  - guest-client.key
+  when: deploy_mode == "install" and ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('enable', False) == True and  host.get('rollsite',{}).get('client_secure', False) == True and guest.get('rollsite',{}).get('server_secure', False) == True and exchange.get('enable',True) == False
+
+- name: "Copy: eggroll client(exchange) keys(host)"
+  copy:
+    src: "keys/host/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - exchange-client-ca.pem
+  - exchange-client.pem
+  - exchange-client.key
+  when: deploy_mode == "install" and ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('client_secure', True) == False and  host.get('rollsite',{}).get('client_secure', False) == True and  exchange.get('rollsite',{}).get('server_secure',False) == True and exchange.get('enable',False) == True
+
+- name: "Copy: eggroll server keys (guest)"
+  copy:
+    src: "keys/guest/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - guest-ca.pem
+  - guest-server.pem
+  - guest-server.key
+  when: deploy_mode == "install" and ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('enable', False) == True and  guest.get('rollsite',{}).get('server_secure', False) == True
+
+- name: "Copy: eggroll client(host) keys (guest)"
+  copy:
+    src: "keys/guest/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - host-client-ca.pem
+  - host-client.pem
+  - host-client.key
+  when: deploy_mode == "install" and ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and  guest.get('rollsite',{}).get('enable', False) == True and guest.get('rollsite',{}).get('client_secure',False) == True and host.get('rollsite',{}).get('server_secure', False) == True and exchange.get('enable',True) == False
+
+- name: "Copy: eggroll client(exchange) keys (guest)"
+  copy:
+    src: "keys/guest/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - exchange-client-ca.pem
+  - exchange-client.pem
+  - exchange-client.key
+  when: deploy_mode == "install" and ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and  guest.get('rollsite',{}).get('enable', False) == True and  guest.get('rollsite',{}).get('client_secure', False) == True and exchange.get('rollsite',{}).get('server_secure',False) == True and exchange.get('enable',False) == True
+
+- name: "Copy: eggroll server keys (exchange)"
+  copy:
+    src: "keys/exchange/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - exchange-ca.pem
+  - exchange-server.pem
+  - exchange-server.key
+  when: deploy_mode == "install" and ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and exchange.get('enable', False) == True and  exchange.get('rollsite',{}).get('server_secure', False) == True
+
+- name: "Copy: eggroll client(host) keys (exchange)"
+  copy:
+    src: "keys/exchange/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - host-client-ca.pem
+  - host-client.pem
+  - host-client.key
+  when: deploy_mode == "install" and ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and  exchange.get('enable', False) == True and  exchange.get('rollsite',{}).get('client_secure', False) == True and host.get('rollsite',{}).get('server_secure',False) ==True and guest.get('rollsite',{}).get('server_secure',False) == False
+
+- name: "Copy: eggroll client(guest) keys (exchange)"
+  copy:
+    src: "keys/exchange/{{item}}"
+    dest: "{{dbase}}/{{pname}}/keys/{{item}}"
+  with_items:
+  - guest-client-ca.pem
+  - guest-client.pem
+  - guest-client.key
+  when: deploy_mode == "install" and ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and  exchange.get('enable', False) == True and  exchange.get('rollsite',{}).get('client_secure', False) == True and guest.get('rollsite',{}).get('server_secure',False) ==True and host.get('rollsite',{}).get('server_secure',False) == False
+
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/{{role_name}}"
+  stat:
+    path: "{{pbase}}/{{pname}}/{{role_name}}/conf/eggroll.properties"
+  register: eggroll_stat
+
+- name: "untar({{deploy_mode}}): eggroll-{{mversions}}.tar.gz"
+  unarchive:
+    src: "eggroll-{{mversion}}.tar.gz"
+    dest: "{{pbase}}/{{pname}}/"
+  when: eggroll_stat.stat.exists == False and deploy_mode == "install" 
+
+- name: "delete({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/logs"
+  file:
+    path: "{{pbase}}/{{pname}}/eggroll/logs"
+    state: absent
+  when: eggroll_stat.stat.exists == False and deploy_mode == "install"
+
+- name: "link({{deploy_mode}}): {{lbase}}/{{pname}}/eggroll"
+  file:
+    src: "{{lbase}}/{{pname}}/eggroll"
+    dest: "{{pbase}}/{{pname}}/eggroll/logs"
+    state: link
+  when: eggroll_stat.stat.exists == False and deploy_mode == "install"
+
+ 
+#- name: "Copy: eggroll.sh {{pbase}}/{{pname}}/eggroll/bin/eggroll.sh"
+#  copy:
+#    src: "eggroll.sh"
+#    dest: "{{pbase}}/{{pname}}/eggroll/bin/eggroll.sh"
+#  when: ansible_ssh_host not in exchange['rollsite'].get('ips',[])
+
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/conf/eggroll.properties"
+  template: src=eggroll.properties.jinja dest={{pbase}}/{{pname}}/eggroll/conf/eggroll.properties
+  when: ( ( ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and host.get('rollsite',{}).get('enable',False) == True ) or ( ansible_ssh_host in host.get('clustermanager',{}).get('ips',[]) and host.get('clustermanager',{}).get('enable',False) == True )  or ( ansible_ssh_host in host.get('nodemanager',{}).get('ips',[]) and host.get('nodemanager',{}).get('enable',False) == True ) or ( ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('enable',False) == True ) or ( ansible_ssh_host in guest.get('clustermanager',{}).get('ips',[]) and guest.get('clustermanager',{}).get('enable',False) == True )  or ( ansible_ssh_host in guest.get('nodemanager',{}).get('ips',[]) and guest.get('nodemanager',{}).get('enable',False) == True )  )  and deploy_mode == 'install'
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/conf/eggroll.properties"
+  template: src=eggroll-exchange.properties.jinja dest={{pbase}}/{{pname}}/eggroll/conf/eggroll.properties
+  when: ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and exchange.get('enable', False) == True and deploy_mode == "install"
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/conf/applicationContext.xml"
+  template: src=applicationContext.xml.jinja dest={{pbase}}/{{pname}}/eggroll/conf/applicationContext-proxy.xml
+  when: deploy_mode == 'install'
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/bin/eggroll.sh"
+  template: src=eggroll.sh.jinja dest={{pbase}}/{{pname}}/eggroll/bin/eggroll.sh
+  when: deploy_mode == 'install'
+
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/conf/route_table_tmp.json"
+  template: src=route_table-{{mversion}}.json.jinja dest={{pbase}}/{{pname}}/eggroll/conf/route_table_tmp.json
+  when: ( ( ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and host.get('rollsite',{}).get('enable',False) == True ) or ( ansible_ssh_host in host.get('clustermanager',{}).get('ips',[]) and host.get('clustermanager',{}).get('enable',False) == True )  or ( ansible_ssh_host in host.get('nodemanager',{}).get('ips',[]) and host.get('nodemanager',{}).get('enable',False) == True ) or ( ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('enable',False) == True ) or ( ansible_ssh_host in guest.get('clustermanager',{}).get('ips',[]) and guest.get('clustermanager',{}).get('enable',False) == True )  or ( ansible_ssh_host in guest.get('nodemanager',{}).get('ips',[]) and guest.get('nodemanager',{}).get('enable',False) == True )  )  and deploy_mode == 'install'
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/conf/route_table_tmp.json(exchange)"
+  template: src=route_table-exchange-{{mversion}}.json.jinja dest={{pbase}}/{{pname}}/eggroll/conf/route_table_tmp.json
+  when: ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and exchange.get('enable', False ) == True and deploy_mode == 'install'
+
+- name: "new({{deploy_mode}}): {{pbase}}/{{pname}}/eggroll/bin/json-replace.sh"
+  template: src=json-replace.sh.jinja dest={{pbase}}/{{pname}}/eggroll/bin/json-replace.sh
+  when:  ( ansible_ssh_host  in host.get('rollsite',{}).get('ips',[]) or ansible_ssh_host  in guest.get('rollsite',{}).get('ips',[]) or ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) ) and deploy_mode == "install"
+
+- name: "check({{deploy_mode}}): route table json format"
+  shell: /bin/bash {{pbase}}/{{pname}}/eggroll/bin/json-replace.sh
+  register: json_replace
+  when:  ( ansible_ssh_host  in host.get('rollsite',{}).get('ips',[]) or ansible_ssh_host  in guest.get('rollsite',{}).get('ips',[]) or ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) ) and deploy_mode == "install"
+
+- debug: var=json_replace['stdout_lines']
+  when:  ( ansible_ssh_host  in host.get('rollsite',{}).get('ips',[]) or ansible_ssh_host  in guest.get('rollsite',{}).get('ips',[]) or ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) ) and deploy_mode == "install"
+
+- name: "output({{deploy_mode}}): check json bad result"
+  fail:
+    msg: "please check json"
+  when:  ( ansible_ssh_host  in host.get('rollsite',{}).get('ips',[]) or ansible_ssh_host  in guest.get('rollsite',{}).get('ips',[]) or ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) ) and deploy_mode == "install" and json_replace.stdout.find('check_json_pass') == -1
+
+#- name: "{{pbase}}/{{pname}}/eggroll/conf/route_table_tmp.json"
+#  file:
+#    path: "{{pbase}}/{{pname}}/eggroll/conf/route_table_tmp.json"
+#    state: absent
+
+#- name: "update {{pbase}}/{{pname}}/eggroll/conf/route_table.json"
+#  command: /bin/bash {{pbase}}/{{pname}}/eggroll/bin/backup.sh
+#  when: json_check.stdout.find('check_json_pass') != -1
+
+#- name: "update {{pbase}}/{{pname}}/eggroll/conf/route_table.json"
+#  template: src=route_table-{{mversion}}.json.jinja dest={{pbase}}/{{pname}}/eggroll/conf/route_table.json
+#  when: ansible_ssh_host not in exchange['rollsite'].get('ips',[])
+
+
+#- name: "update {{pbase}}/{{pname}}/eggroll/conf/route_table.json"
+#  template: src=route_table-exchange-{{mversion}}.json.jinja dest={{pbase}}/{{pname}}/eggroll/conf/route_table.json
+#  when: ansible_ssh_host in exchange['rollsite'].get('ips',[])
+
+- name: "update({{deploy_mode}}): {{cbase}}/supervisord/supervisord.d/{{pname}}-rollsite.conf"
+  template: src=supervisor.d/eggroll.conf.jinja dest={{cbase}}/supervisord/supervisord.d/{{pname}}-rollstie.conf
+  vars:
+    role: rollsite
+  when: ( ansible_ssh_host in host['rollsite'].get('ips',[]) and host['rollsite']['enable'] == True ) or ( ansible_ssh_host in guest['rollsite'].get('ips',[]) and guest['rollsite']['enable'] == True and deploy_mode == "install" ) or (  ansible_ssh_host in exchange['rollsite'].get('ips',[]) and exchange['enable'] == True and deploy_mode == "install" ) 
+  notify:
+  - reload {{pname}}-rollsite
+  - restart {{pname}}-rollsite
+
+- name: "update({{deploy_mode}}): {{cbase}}/supervisord/supervisord.d/{{pname}}-clustermanager.conf"
+  template: src=supervisor.d/eggroll.conf.jinja dest={{cbase}}/supervisord/supervisord.d/{{pname}}-clustermanager.conf
+  vars:
+    role: clustermanager
+  when: ( ansible_ssh_host in host['clustermanager'].get('ips',[]) and host['clustermanager']['enable'] == True and deploy_mode == "install" ) or ( ansible_ssh_host in guest['clustermanager'].get('ips',[]) and guest['clustermanager']['enable'] == True and deploy_mode == "install" )
+  notify:
+  - reload {{pname}}-clustermanager
+  - restart {{pname}}-clustermanager
+
+
+#- name: "update {{pbase}}/{{pname}}/eggroll/conf/route_table.json"
+#  template: src=route_table-exchange-{{mversion}}.json.jinja dest={{pbase}}/{{pname}}/eggroll/conf/route_table.json
+#  when: ansible_ssh_host in exchange['rollsite'].get('ips',[])
+
+
+- name: "update({{deploy_mode}}): {{cbase}}/supervisord/supervisord.d/{{pname}}-nodemanager.conf"
+  template: src=supervisor.d/eggroll.conf.jinja dest={{cbase}}/supervisord/supervisord.d/{{pname}}-nodemanager.conf
+  vars:
+    role: nodemanager
+  when: ( ansible_ssh_host in host['nodemanager'].get('ips',[]) and host['nodemanager']['enable'] == True and deploy_mode == "install" ) or ( ansible_ssh_host in guest['nodemanager'].get('ips',[]) and guest['nodemanager']['enable'] == True and deploy_mode == "install" )
+  notify:
+  - reload {{pname}}-nodemanager
+  - restart {{pname}}-nodemanager
+
+- name: restart fate-nodemanager
+  shell: /bin/bash {{cbase}}/supervisord/service.sh restart fate-nodemanager
+  when: ( ansible_ssh_host in host['nodemanager'].get('ips',[]) and host['nodemanager']['enable'] == True and deploy_mode == "update" ) or ( ansible_ssh_host in guest['nodemanager'].get('ips',[]) and guest['nodemanager']['enable'] == True and deploy_mode == "update" ) 
+
+- name: restart fate-clustermanager
+  shell: /bin/bash {{cbase}}/supervisord/service.sh restart fate-clustermanager
+  when: deploy_mode == 'update' and ( ( ansible_ssh_host in host['clustermanager'].get('ips',[]) and host['clustermanager']['enable'] == True ) or ( ansible_ssh_host in guest['clustermanager'].get('ips',[]) and guest['clustermanager']['enable'] == True ) )
+
+- name: restart fate-rollsite
+  shell: /bin/bash {{cbase}}/supervisord/service.sh restart fate-rollsite
+  when: deploy_mode == 'update' and ( ( ansible_ssh_host in host['rollsite'].get('ips',[]) and host['rollsite']['enable'] == True ) or ( ansible_ssh_host in guest['rollsite'].get('ips',[]) and guest['rollsite']['enable'] == True ) or (  ansible_ssh_host in exchange['rollsite'].get('ips',[]) and exchange['enable'] == True ) )
+

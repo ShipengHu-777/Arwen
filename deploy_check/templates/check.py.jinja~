@@ -1,0 +1,67 @@
+#!/usr/bin/python
+import socket;
+
+exchange={{exchange}}
+host={{host}}
+guest={{guest}}
+
+datas=[]
+if exchange.get('enable',False):
+  for ip in exchange['rollsite'].get('ips',[]):
+    #print(ip)
+    temp={}
+    temp['ip']=ip
+    temp['port']=exchange['rollsite'].get('port',9370)
+    temp['role']="exchange"
+    temp['item']="rollsite"
+    datas.append(temp)
+#print(datas)
+#datas=[{"item":"rollsite","ip":"10.107.117.16","port":9370},{"item":"rollsite","ip":"10.107.117.16","port":9371}]
+for item in [ "host", "guest" ]:
+  if item == "host":
+    trole=host
+  else:
+    trole=guest
+  
+  for name in [ "rollsite","clustermanager","nodemanager","fate_flow","fateboard","mysql" ]:
+    #print(name)
+    if trole[name]['enable'] == True and name == 'rollsite':
+      for tmp in trole[name]['rules']:
+        if tmp['name'] == 'default':
+          temp={}
+	  temp['role']=item
+	  temp['item']=name
+	  temp['ip']=tmp['ip']
+	  temp['port']=tmp['port']
+          datas.append(temp)
+    else:
+      if name == "fate_flow":
+        for ip in trole[name]['ips']:
+          for port_name in [ "grpcPort", "httpPort" ]:
+            temp={}
+            temp['role']=item
+            temp['item']=name
+            temp['ip']=ip
+            temp['port']=trole[name][port_name]
+            datas.append(temp)
+
+      else:
+        for ip in trole[name]['ips']:
+          temp={}
+          temp['role']=item
+          temp['item']=name
+          temp['ip']=ip
+          temp['port']=trole[name]['port']
+          datas.append(temp)
+#print(datas)
+time.sleep(120)
+
+for temp in datas:
+  sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  sock.settimeout(1)
+  result=sock.connect_ex((temp['ip'],temp['port']))
+  if result == 0:
+    print(temp['role'],temp['item'],temp['ip'],temp['port'],"ok")
+  else:
+    print(temp['role'],temp['item'],temp['ip'],temp['port'],"nook")
+

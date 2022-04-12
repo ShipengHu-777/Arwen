@@ -1,0 +1,102 @@
+
+- name: "wait({{deploy_mode}})): open port {{exchange.get('rollsite',{}).get('port',9370)}}(exchange)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{exchange.get('rollsite',{}).get('port',9370)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_rollsite_exchange
+  when: ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and exchange.get('rollsite',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check rollsite service(exchange)"
+  debug: msg="******start rollsite successfully******"
+  when: waitfor_rollsite_exchange.get('state') == 'started' and ansible_ssh_host in exchange.get('rollsite',{}).get('ips',[]) and exchange.get('rollsite',{}).get('enable',False) == True 
+
+- name: "wait({{deploy_mode}})): open port {{host.get('rollsite',{}).get('port',9370)}}(host)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{host.get('rollsite',{}).get('port',9370)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_rollsite_host
+  when: ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and host.get('rollsite',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check rollsite service(host)"
+  debug: msg="******start rollsite successfully******"
+  when: waitfor_rollsite_host.get('state') == 'started' and ansible_ssh_host in host.get('rollsite',{}).get('ips',[]) and host.get('rollsite',{}).get('enable',False) == True
+
+
+- name: "wait({{deploy_mode}})): open port {{guest.get('rollsite',{}).get('port',9370)}}(guest)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{guest.get('rollsite',{}).get('port',9370)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_rollsite_guest
+  when: ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check rollsite service(guest)"
+  debug: msg="******start rollsite successfully******"
+  when: waitfor_rollsite_guest.get('state') == 'started' and ansible_ssh_host in guest.get('rollsite',{}).get('ips',[]) and guest.get('rollsite',{}).get('enable',False) == True
+
+- name: "wait({{deploy_mode}})): open port {{host.get('clustermanager',{}).get('port',4670)}}(host)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{host.get('clustermanager',{}).get('port',4670)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_clustermanager_host
+  when: ansible_ssh_host in host.get('clustermanager',{}).get('ips',[]) and host.get('clustermanager',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check clustermanager service(host)"
+  debug: msg="******start clustermanager successfully******"
+  when: waitfor_clustermanager_host.get('state') == 'started' and ansible_ssh_host in host.get('clustermanager',{}).get('ips',[]) and host.get('clustermanager',{}).get('enable',False) == True
+
+- name: "wait({{deploy_mode}})): open port {{guest.get('clustermanager',{}).get('port',4670)}}(guest)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{guest.get('clustermanager',{}).get('port',4670)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_clustermanager_guest
+  when: ansible_ssh_host in guest.get('clustermanager',{}).get('ips',[]) and guest.get('clustermanager',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check clustermanager service(guest)"
+  debug: msg="******start clustermanager successfully******"
+  when: waitfor_clustermanager_guest.get('state') == 'started' and ansible_ssh_host in guest.get('clustermanager',{}).get('ips',[]) and guest.get('clustermanager',{}).get('enable',False) == True
+
+- name: "wait({{deploy_mode}})): open port {{host.get('nodemanager',{}).get('port',4671)}}(host)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{host.get('nodemanager',{}).get('port',4671)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_nodemanager_host
+  when: ansible_ssh_host in host.get('nodemanager',{}).get('ips',[]) and host.get('nodemanager',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check nodemanager service(host)"
+  debug: msg="******start nodemanager successfully******"
+  when: waitfor_nodemanager_host.get('state') == 'started' and ansible_ssh_host in host.get('nodemanager',{}).get('ips',[]) and host.get('nodemanager',{}).get('enable',False) == True
+
+- name: "wait({{deploy_mode}})): open port {{guest.get('nodemanager',{}).get('port',4671)}}(guest)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{guest.get('nodemanager',{}).get('port',4671)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_nodemanager_guest
+  when: ansible_ssh_host in guest.get('nodemanager',{}).get('ips',[]) and guest.get('nodemanager',{}).get('enable',False) == True
+
+- name: "check({{deploy_mode}})): check nodemanager service(guest)"
+  debug: msg="******start nodemanager successfully******"
+  when: waitfor_nodemanager_guest.get('state') == 'started' and ansible_ssh_host in guest.get('nodemanager',{}).get('ips',[]) and guest.get('nodemanager',{}).get('enable',False) == True
+
+
+

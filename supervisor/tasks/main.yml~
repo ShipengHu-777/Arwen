@@ -1,0 +1,123 @@
+- name: "mkdir({{deploy_mode}}): common base dir"
+  file:
+    path: "{{cbase}}"
+    state: "directory"
+    owner: "{{ansible_ssh_user}}"
+
+- name: "check({{deploy_mode}}): /usr/bin/supervisord"
+  stat: path="/usr/bin/supervisord"
+  register: supervisord_os_reg
+
+- set_fact: supervisord_path="/usr/bin"
+  when: supervisord_os_reg.stat.exists == True
+
+- set_fact: supervisord_path="{{cbase}}/miniconda3/bin"
+  when: supervisord_os_reg.stat.exists == False
+
+- debug: var=supervisord_path
+
+- name: "check({{deploy_mode}}): supervisord conf file"
+  stat: path="{{cbase}}/miniconda3/bin/supervisord"
+  register: supervisord_self_reg
+  when: supervisord_os_reg.stat.exists == False
+
+- name: "check({{deploy_mode}}): miniconda3 package"
+  stat: path="{{tbase}}/{{pname}}/Miniconda3-{{python['version']}}-Linux-x86_64.sh"
+  register: supervisord_package_reg
+  when: supervisord_os_reg.stat.exists == False and supervisord_self_reg.stat.exists == False
+
+- name: "copy({{deploy_mode}}): Miniconda3-{{python['version']}}-Linux-x86_64.sh"
+  copy:
+    src: "Miniconda3-{{python['version']}}-Linux-x86_64.sh"
+    dest: "{{tbase}}/{{pname}}/Miniconda3-{{python['version']}}-Linux-x86_64.sh"
+  when: supervisord_os_reg.stat.exists == False and supervisord_self_reg.stat.exists == False and supervisord_package_reg.stat.exists == False
+
+- name: "commit({{deploy_mode}}): Miniconda3-{{python['version']}}-Linux-x86_64.sh"
+  shell: "/bin/bash ./Miniconda3-{{python['version']}}-Linux-x86_64.sh  -b -p {{cbase}}/{{python['dest']}}"
+  args:
+    chdir: "{{tbase}}/{{pname}}"
+  when: supervisord_os_reg.stat.exists == False and supervisord_self_reg.stat.exists == False
+
+- name: "copy({{deploy_mode}}): supervisor-4.2.1.tar.gz"
+  copy:
+    src: "supervisor-4.2.1.tar.gz"
+    dest: "{{tbase}}/{{pname}}"
+  when: supervisord_os_reg.stat.exists == False and supervisord_self_reg.stat.exists == False
+
+- name: "pip({{deploy_mode}}): install supervisor"
+  pip:
+    extra_args: "--no-index --find-links={{tbase}}/{{pname}}/"
+    executable: "{{supervisord_path}}/pip"
+    name: "file://{{tbase}}/{{pname}}/supervisor-4.2.1.tar.gz"
+  when: supervisord_os_reg.stat.exists == False and supervisord_self_reg.stat.exists == False
+
+- name: "check({{deploy_mode}}): supervisord conf file"
+  stat: path="{{cbase}}/supervisord"
+  register: supervisord_conf_reg
+
+- name: "untar({{deploy_mode}}): supervisord-conf-{{supervisord.get('version','1.1.4')}}.tar.gz"
+  unarchive:
+    src: "supervisord-conf-{{supervisord.get('version','1.1.4')}}.tar.gz"
+    dest: "{{cbase}}/"
+  when: supervisord_conf_reg.stat.exists == False
+
+
+- name: "new({{deploy_mode}}): supervisord/supervisord.conf"
+  template:
+    src: supervisord.conf.jinja
+    dest: "{{cbase}}/supervisord/supervisord.conf"
+  vars:
+    account: "{{supervisord['account']}}"
+    service: "{{supervisord['service']}}"
+
+- name: "new({{deploy_mode}}): service.sh"
+  template:
+    src: service.sh.jinja
+    dest: "{{cbase}}/supervisord/service.sh"
+    mode: 0755
+  vars:
+    account: "{{supervisord['account']}}"
+    service: "{{supervisord['service']}}"
+
+- name: "new({{deploy_mode}}): boot.sh"
+  template:
+    src: boot.sh.jinja
+    dest: "{{cbase}}/supervisord/boot.sh"
+    mode: 0755
+
+
+- name: "mkdir({{deploy_mode}}): project common dir"
+  file:
+    path: "{{cbase}}/supervisord/{{item}}"
+    state: "directory"
+  with_items:
+    - logs
+    - run
+    - supervisord.d
+
+- name: "mkdir({{deploy_mode}}): {{lbase}}/supervisord"
+  file:
+    path: "{{lbase}}/supervisord"
+    state: "directory"
+
+- name: "start({{deploy_mode}}): supervisord service"
+  command: "/bin/bash {{cbase}}/supervisord/check.sh > {{lbase}}/supervisord/check.log"
+
+- name: "crond({{deploy_mode}}): supervisord process"
+  cron:
+    name: "check_supervisord_process"
+    minute: "*/5"
+    job: "/bin/bash {{cbase}}/supervisord/check.sh > {{lbase}}/supervisord/check.log"
+
+- name: "wait({{deploy_mode}})): open port 9001"
+  wait_for:
+    host: 127.0.0.1
+    port: 9001
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_supervisor
+
+- name: "check({{deploy_mode}})): supervisor service"
+  debug: msg="******start {{role_name}} successfully******"
+  when: waitfor_supervisor.get('state') == 'started'

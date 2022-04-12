@@ -1,0 +1,143 @@
+- name: "mkdir({{deploy_mode}}): {{pname}} {{role_name}} directory"
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "{{pbase}}/{{pname}}/{{mysql['path']}}"
+  - "{{lbase}}/{{pname}}/{{role_name}}"
+  - "{{lbase}}/{{pname}}/supervisord"
+
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}" 
+  stat:
+    path: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}"
+  register: stat_mysql_dir
+
+- name: "untar({{deploy_mode}}): {{role_name}}-{{mysql['version']}}.tar.gz"
+  unarchive:
+    src: "{{role_name}}-{{mysql['version']}}.tar.gz"
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}"
+  register: stat_mysql_tar
+  when: stat_mysql_dir.stat.exists == False
+
+#- debug: var=stat_mysql_tar
+
+
+- name: "mkdir({{deploy_mode}}): {{pname}}/{{role_name}} conf-run-sql data"
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+  with_items:
+  - "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/conf"
+  - "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/run"
+  - "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/sql"
+  - "{{pbase}}/data/{{pname}}/{{role_name}}"
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/conf/my.cnf"
+  template: 
+    src: my.cnf.jinja 
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/conf/my.cnf"
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/load.sh"
+  template: 
+    src: load.sh.jinja 
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/load.sh"
+    mode: 0755
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/init.sh"
+  template: 
+    src: init.sh.jinja 
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/init.sh"
+    mode: 0755
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/chpasswd.sh"
+  template:
+    src: chpasswd.sh.jinja
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/chpasswd.sh"
+    mode: 0755
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "copy({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/sql/create-meta-service.sql"
+  copy:
+    src: "{{item}}"
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/sql/{{item}}"
+  with_items:
+  - create-eggroll-meta-tables.sql
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/sql/insert-node.sql"
+  template:
+    src: insert-node.sql.jinja
+    dest: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/sql/insert-node.sql"
+  when: stat_mysql_dir.stat.exists == False
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/.init" 
+  stat:
+    path: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/.init"
+  register: stat_mysql_init
+
+#- debug: var=stat_mysql_init
+
+- name: "commit({{deploy_mode}}):   init.sh"
+  shell: /bin/bash {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/init.sh
+  register: mysql_init
+  when: stat_mysql_init.stat.exists == False 
+
+- debug: var=mysql_init
+
+- name: "update({{deploy_mode}}): {{cbase}}/supervisord/supervisord.d/{{pname}}-{{role_name}}.conf"
+  template: src=supervisor.d/{{role_name}}.conf.jinja dest={{cbase}}/supervisord/supervisord.d/{{pname}}-{{role_name}}.conf
+  #notify:
+  #- reload {{pname}}-{{role_name}}
+  #- stop {{pname}}-{{role_name}}
+  #- start {{pname}}-{{role_name}}
+
+- name: "check({{deploy_mode}}): {{pname}}-{{role_name}} is running or not" 
+  shell: /bin/bash {{cbase}}/supervisord/service.sh status {{pname}}-{{role_name}}
+  register: mysql_check_status
+  ignore_errors: True
+
+- debug: var=mysql_check_status
+
+- name: "start({{deploy_mode}}): mysql"
+  shell: /bin/bash {{cbase}}/supervisord/service.sh update {{pname}}-{{role_name}} && /bin/bash {{cbase}}/supervisord/service.sh start {{pname}}-{{role_name}}
+  register: mysql_start
+  when: mysql_check_status.stdout.find('RUNNING')  == -1
+
+- debug: var=mysql_start
+
+- name: "check({{deploy_mode}}): {{pname}}-{{role_name}} is running or not" 
+  shell: /bin/bash {{cbase}}/supervisord/service.sh status {{pname}}-{{role_name}}
+  register: mysql_status
+  until: mysql_status.stdout.find("RUNNING") != -1
+  retries: 2
+  delay: 60
+
+
+- debug: var=mysql_status
+
+- name: "chpasswd({{deploy_mode}}): admin password " 
+  shell: "/bin/bash {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/chpasswd.sh {{mysql['passwd']}}" 
+  register: mysql_chpasswd_status
+  when: mysql_status.stdout.find('RUNNING')  > 0 and stat_mysql_dir.stat.exists == False
+
+- debug: var=mysql_chpasswd_status
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/.load" 
+  stat:
+    path: "{{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/.load"
+  register: stat_mysql_load
+
+- name: "commit({{deploy_mode}}): load.sh"
+  shell: /bin/bash {{pbase}}/{{pname}}/{{mysql['path']}}/{{role_name}}-{{mysql['version']}}/load.sh
+  when: stat_mysql_load.stat.exists == False and stat_mysql_dir.stat.exists == False
+  register: mysql_load
+
+- debug: var=mysql_load
+

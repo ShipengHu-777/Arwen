@@ -1,0 +1,65 @@
+
+- name: "Warning({{deploy_mode}}):"
+  fail:
+    msg: "Please setup deploy_mode variable in the file whose name is fate_init first."
+  when: deploy_mode is undefined  or deploy_mode == ""
+
+- name: "mkdir({{deploy_mode}}): base dir"
+  file:
+    path: "{{pbase}}/{{pname}}"
+    state: "directory"
+    owner: "{{ansible_ssh_user}}"
+
+
+- name: "mkdir({{deploy_mode}}): tools dir"
+  file:
+    path: "{{pbase}}/{{pname}}/tools"
+    state: "directory"
+    owner: "{{ansible_ssh_user}}"
+
+- name: "copy({{deploy_mode}}): check.sh"
+  copy:
+    src: "{{item}}" 
+    dest: "{{pbase}}/{{pname}}/tools/{{item}}"
+  with_items:
+  - check.sh
+  - makeVirtualDisk.sh
+  when: deploy_mode == "install"
+
+- name: "copy({{deploy_mode}}): check.sh"
+  copy:
+    src: "{{item}}" 
+    dest: "{{pbase}}/{{pname}}/tools/{{item}}"
+  with_items:
+  - ucheck.sh
+  - makeVirtualDisk.sh
+  when: deploy_mode == "update"
+
+- name: "check({{deploy_mode}}): doing"
+  command: "/bin/bash {{pbase}}/{{pname}}/tools/check.sh"
+  when: deploy_mode == "install"
+  register: checkOutputInstall
+
+- name: "check({{deploy_mode}}): doing"
+  command: "/bin/bash {{pbase}}/{{pname}}/tools/ucheck.sh"
+  when: deploy_mode == "update"
+  register: checkOutputUpdate
+
+- name: "output({{deploy_mode}}): check results"
+  debug: msg={{checkOutputInstall.stdout_lines}} 
+  when: deploy_mode == "install"
+
+- name: "output({{deploy_mode}}): check results"
+  debug: msg={{checkOutputUpdate.stdout_lines}} 
+  when: deploy_mode == "update"
+
+- name: "Waring({{deploy_mode}}):"
+  fail:
+    msg: "Please fix the above Warning first"
+  when: 'deploy_mode == "install" and "Warning" in checkOutputInstall.stdout and envCheck == True'
+
+- name: "Waring({{deploy_mode}}):"
+  fail:
+    msg: "Please fix the above Warning first"
+  when: 'deploy_mode == "update" and "Warning" in checkOutputUpdate.stdout and envCheck == True'
+

@@ -1,0 +1,112 @@
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/python"
+  stat:
+    path: "{{pbase}}/{{pname}}/python"
+  register: flow_dir_stat
+
+
+- name: "mkdir({{deploy_mode}}): {{pbase}}/{{pname}}/{bin,conf}"
+  file:
+    path: "{{pbase}}/{{pname}}/{{item}}"
+    state: directory
+  with_items:
+  - bin
+  - conf
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/examples/toy_example/run_toy_example.py"
+  stat:
+    path: "{{pbase}}/{{pname}}/examples/toy_example/run_toy_example.py"
+  register: fate_exp_stat
+
+- name: "untar({{deploy_mode}}): fate_examples-{{mversion}}.tar.gz"
+  unarchive:
+    src: "fate_examples-{{mversion}}.tar.gz"
+    dest: "{{pbase}}/{{pname}}/"
+  when: fate_exp_stat.stat.exists == False
+
+- name: "check({{deploy_mode}}): {{pbase}}/{{pname}}/python/{{role_name}}/fate_flow_server.py"
+  stat:
+    path: "{{pbase}}/{{pname}}/python/{{role_name}}/fate_flow_server.py"
+  register: flow_stat
+
+- name: "untar({{deploy_mode}}): {{role_name}}-{{mversion}}.tar.gz"
+  unarchive:
+    src: "{{role_name}}-{{mversion}}.tar.gz"
+    dest: "{{pbase}}/{{pname}}/"
+  when: flow_stat.stat.exists == False
+
+
+- name: "mkdir({{deploy_mode}}): {{lbase}}/{{pname}}/fateflow"
+  file:
+    path: "{{lbase}}/{{pname}}/fateflow"
+    state: directory
+
+- name: "delete({{deploy_mode}}): {{pbase}}/{{pname}}/python/logs"
+  file:
+    path: "{{pbase}}/{{pname}}/python/logs"
+    state: absent
+  when: flow_stat.stat.exists == False
+
+- name: "link({{deploy_mode}}): {{lbase}}/{{pname}}/fateflow"
+  file:
+    src: "{{lbase}}/{{pname}}/fateflow"
+    dest: "{{pbase}}/{{pname}}/logs"
+    state: link
+  when: flow_stat.stat.exists == False
+
+- name: "copy({{deploy_mode}}): to {{pbase}}/{{pname}}/"
+  copy:
+    src: "{{item}}"
+    dest: "{{pbase}}/{{pname}}/{{item}}"
+  with_items:
+  - "RELEASE.md"
+  - "fate.env"
+
+#- name: "copy({{deploy_mode}}): service.sh {{pbase}}/{{pname}}/python/fate_flow/service.sh"
+#  copy:
+#    src: "service.sh"
+#    dest: "{{pbase}}/{{pname}}/python/fate_flow/service.sh"
+
+- name: "copy({{deploy_mode}}): transfer_conf.yaml {{pbase}}/{{pname}}/conf/transfer_conf.yaml"
+  copy:
+    src: "transfer_conf.yaml"
+    dest: "{{pbase}}/{{pname}}/conf/transfer_conf.yaml"
+
+    #- name: "mkdir({{deploy_mode}}): {{pbase}}/{{pname}}/python/logs {{lbase}}/{{pname}}/{{role_name}}"
+    #file:
+    #path: "{{item}}"
+    #state: directory
+    #mode: 0755
+    #with_items:
+    #- "{{pbase}}/{{pname}}/python/{{role_name}}"
+    #- "{{pbase}}/{{pname}}/python/logs"
+    #when: flow_stat.stat.exists == False
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/bin/init_env.sh"
+  template: src=init_env.sh.jinja dest={{pbase}}/{{pname}}/bin/init_env.sh
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/conf/service_conf.yaml(not fate_flow)"
+  template: src=service_conf.yaml.jinja dest={{pbase}}/{{pname}}/conf/service_conf.yaml
+  when: ansible_ssh_host not in host[role_name]["ips"] or ansible_ssh_host not in guest[role_name]["ips"]
+
+- name: "update({{deploy_mode}}): {{pbase}}/{{pname}}/conf/service_conf.yaml"
+  template: src=service_conf.yaml.jinja dest={{pbase}}/{{pname}}/conf/service_conf.yaml
+  notify:
+  - reload {{pname}}-{{role_name}}
+  - restart {{pname}}-{{role_name}}
+  #when: flow_stat.stat.exists == False
+  when: ( ansible_ssh_host in host[role_name]["ips"] and host[role_name]['enable'] == True )  or ( ansible_ssh_host in guest[role_name]["ips"] and guest[role_name]['enable'] == True )
+
+- name: "update({{deploy_mode}}): {{cbase}}/supervisord/supervisord.d/{{pname}}-{{role_name}}.conf"
+  template: src=supervisor.d/{{role_name}}.conf.jinja dest={{cbase}}/supervisord/supervisord.d/{{pname}}-fateflow.conf
+  vars:
+    service: "{{supervisord['service']}}"
+  notify:
+  - reload {{pname}}-{{role_name}}
+  - restart {{pname}}-{{role_name}}
+  when: ( ansible_ssh_host in host[role_name]["ips"] and host[role_name]['enable'] == True )  or ( ansible_ssh_host in guest[role_name]["ips"] and guest[role_name]['enable'] == True )
+
+- name: "flush_handlers" 
+  meta: flush_handlers
+
+

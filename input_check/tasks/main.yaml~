@@ -1,0 +1,11 @@
+- name: "update"
+  template: src=check.py.jinja dest=/tmp/fate-offline-deloy-check.py
+  connection: local
+
+- name: "a check of deploy"
+  shell: python /tmp/fate-offline-deploy-check.py
+  register: deploy_check_output
+
+- name: "output({{deploy_mode}}): deploy check results"
+  debug: msg={{deploy_check_output.stdout_lines}} 
+

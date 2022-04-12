@@ -1,0 +1,50 @@
+
+- name: "wait({{deploy_mode}})): open port {{host.get('fate_flow',{}).get('grpcPort',9360)}}(host)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{host.get('fate_flow',{}).get('grpcPort',9360)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_fate_flow_grpc_host
+  when: ansible_ssh_host in host.get('fate_flow',{}).get('ips',[]) and host['fate_flow']['enable'] == True
+
+- name: "wait({{deploy_mode}})): open port {{host.get('fate_flow',{}).get('httpPort',9380)}}(host)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{host.get('fate_flow',{}).get('httpPort',9380)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_fate_flow_http_host
+  when: waitfor_fate_flow_grpc_host.get('state') == 'started' and ansible_ssh_host in host.get('fate_flow',{}).get('ips',[]) and host['fate_flow']['enable'] == True
+
+- name: "check({{deploy_mode}})): check fate_flow service(host)"
+  debug: msg="******start fate_flow successfully******"
+  when: waitfor_fate_flow_grpc_host.get('state') == 'started' and waitfor_fate_flow_http_host.get('state') == 'started' and ansible_ssh_host in host.get('fate_flow',{}).get('ips',[]) and host['fate_flow']['enable'] == True
+
+- name: "wait({{deploy_mode}})): open port {{guest.get('fate_flow',{}).get('httpPort',9360)}}(guest)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{guest.get('fate_flow',{}).get('httpPort',9360)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_fate_flow_grpc
+  when: ansible_ssh_host in guest.get('fate_flow',{}).get('ips',[]) and guest['fate_flow']['enable'] == True
+
+- name: "wait({{deploy_mode}})): open port {{guest.get('fate_flow',{}).get('httpPort',9380)}}(guest)"
+  wait_for:
+    host: "{{ansible_ssh_host}}"
+    port: "{{guest.get('fate_flow',{}).get('httpPort',9380)}}"
+    delay: 0
+    state: started
+    timeout: 120
+  register: waitfor_fate_flow_http
+  when: waitfor_fate_flow_grpc.get('state') == 'started' and ansible_ssh_host in guest.get('fate_flow',{}).get('ips',[]) and guest['fate_flow']['enable'] == True
+
+- name: "check({{deploy_mode}})): check fate_flow service(guest)"
+  debug: msg="******start fate_flow successfully******"
+  when: waitfor_fate_flow_grpc.get('state') == 'started' and waitfor_fate_flow_http.get('state') == 'started' and ansible_ssh_host in guest.get('fate_flow',{}).get('ips',[]) and guest['fate_flow']['enable'] == True
+
+
