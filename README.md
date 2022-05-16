@@ -15,3 +15,4 @@ Then, run the following command to install the environment.
 sh ./boot.sh prod -D 
 ```
 
+If you already have installed FATE v1.6, you can skip above installation process and directly use `basic_algorithms` and `boosting` to replace the original folders under the path of `/fate/python/federatedml/ensemble` for our optimizations to be applied. Since our system is implemented based on FATE, the original users can apply our optimizations very conveniently without making major changes to their system.
