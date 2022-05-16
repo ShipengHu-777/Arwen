@@ -1,4 +1,8 @@
 # Arwen
+The following packets should be installed first:
+
+gcc gcc-c++ make openssl-devel gmp-devel mpfr-devel libmpc-devel libaio <br/>numactl autoconf automake libtool libffi-devel ansible
+
 We provide ansible scripts to automatically deploy the federated cluster adopted in the experiments in a convenient manner.
 
 First, execute the following command to clean old configuration and init new configuration. 
